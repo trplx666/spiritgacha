@@ -21,7 +21,7 @@ public class GenerateAccountCredentials {
     @Autowired
     private RegisterService registerService;
 
-    @Scheduled(fixedDelay = 600000) // 10 min
+
     public Map<String, String> generateAccountCredentials() {
         String url = "https://randomuser.me/api/";
         HttpClient client = HttpClient.newHttpClient();
@@ -48,9 +48,6 @@ public class GenerateAccountCredentials {
                 String email = username + "@gmail.com";
                 Map<String, String> account = new HashMap<>();
                 account.put(email, password);
-
-                registerService.register(email,password);
-
                 return account;
             } else {
                 System.out.println("No results found in the JSON.");
@@ -61,6 +58,21 @@ public class GenerateAccountCredentials {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public void generateAndQueueAccounts() {
+        Map<String, String> account = generateAccountCredentials();
+        if (account != null) {
+            account.forEach((email, password) -> {
+                registerService.addToQueue(email, password);
+            });
+            System.out.println("Successfully added account " + account + " to queue");
+        }
+    }
+
+    @Scheduled(fixedRate = 300000)
+    public void generateAndQueueAccountsScheduled() {
+        generateAndQueueAccounts();
     }
 
     private static String passwordValidator(String password) {

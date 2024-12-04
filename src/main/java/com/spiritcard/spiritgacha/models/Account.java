@@ -13,6 +13,7 @@ public class Account {
     private String email;
     private String password;
     private int tickets;
+    private int openCount;
 
     public Account() {
 
@@ -22,14 +23,7 @@ public class Account {
         this.email = email;
         this.password = password;
         this.tickets = 0;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
+        this.openCount = 0;
     }
 
     public String getEmail() {
@@ -56,8 +50,12 @@ public class Account {
         this.tickets = tickets;
     }
 
-    public void addTickets(int amount) {
-        this.tickets += amount;
+    public int getOpenCount() {
+        return openCount;
+    }
+
+    public void setOpenCount(int openCount) {
+        this.openCount = openCount;
     }
 
     @Override
@@ -67,6 +65,7 @@ public class Account {
                 ", email='" + email + '\'' +
                 ", password='" + password + '\'' +
                 ", tickets=" + tickets +
+                ", openCount=" + openCount +
                 '}';
     }
 }

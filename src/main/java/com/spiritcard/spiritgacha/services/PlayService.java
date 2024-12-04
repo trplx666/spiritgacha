@@ -82,12 +82,15 @@ public class PlayService {
 
             if (openCount == 10) {
                 System.out.println("Tickets: " + tickets);
-                if (tickets > 0) {
+                if (tickets >= 0) {
                     Account account = AccountContext.getAccount();
                     if (account != null) {
                         account.setTickets(tickets);
+                        account.setOpenCount(openCount);
                         accountRepository.save(account);
-                        System.out.println("ВЫПАЛА ЗОЛОТАЯ КАРТОЧКА!!!");
+                        if (tickets > 0){
+                            System.out.println("ВЫПАЛА ЗОЛОТАЯ КАРТОЧКА!!! на аккаунт: " + account);
+                        }
                         System.out.println("Аккаунт сохранён в базе данных: " + account);
                     }
                 }
