@@ -70,7 +70,7 @@ public class GenerateAccountCredentials {
         }
     }
 
-    @Scheduled(fixedRate = 300000)
+    @Scheduled(initialDelay = 300000,fixedRate = 300000)
     public void generateAndQueueAccountsScheduled() {
         generateAndQueueAccounts();
     }

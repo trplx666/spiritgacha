@@ -13,6 +13,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Service
@@ -25,6 +26,8 @@ public class RegisterService {
     private AccountRepository accountRepository;
 
     private final ConcurrentLinkedQueue<Map.Entry<String, String>> registrationQueue = new ConcurrentLinkedQueue<>();
+    private final Map<String, Integer> registrationAttempts = new ConcurrentHashMap<>(); // Email -> Attempt count
+    private static final int MAX_ATTEMPTS = 5;
 
     public Account register(String email, String password) {
         String url = "https://napi.teamspirit.gg/graphql";
@@ -90,14 +93,30 @@ public class RegisterService {
         while (!registrationQueue.isEmpty()) {
             Map.Entry<String, String> account = registrationQueue.poll();
             if (account != null) {
+                String email = account.getKey();
+                String password = account.getValue();
+                int attempts = registrationAttempts.getOrDefault(email, 0);
+
+                if (attempts >= MAX_ATTEMPTS) {
+                    System.err.println("Exceeded max registration attempts for: " + email);
+                    continue;
+                }
+
                 try {
-                    register(account.getKey(), account.getValue());
-                    System.out.println("Successfully registered: " + account.getKey());
+                    register(email, password);
+                    registrationAttempts.remove(email);
+                    System.out.println("Successfully registered: " + email);
                 } catch (Exception e) {
-                    System.err.println("Failed to register: " + account.getKey() + ". Re-adding to queue.");
-                    registrationQueue.add(account);
+                    registrationAttempts.put(email, attempts + 1);
+                    System.err.println("Failed to register: " + email + ". Attempts: " + (attempts + 1));
+                    scheduleRetry(email, password);
                 }
             }
         }
+    }
+
+    private void scheduleRetry(String email, String password) {
+        registrationQueue.add(Map.entry(email, password));
+        System.out.println("Retry scheduled for: " + email);
     }
 }
