@@ -22,7 +22,7 @@ public class DailyAccountsPlay {
     @Autowired
     private PlayService playService;
 
-    @Scheduled(cron = "1 21 * * *", zone = "UTC") // 00:01 msk
+    @Scheduled(cron = "0 1 21 * * *") // 00:01 msk
     public void ProcessDataBaseAccounts() {
         List<Account> accounts = accountRepository.findAll();
         System.out.println("Обработка всех аккаунтов из бд. Найдено: " + accounts.size() + " аккаунтов");

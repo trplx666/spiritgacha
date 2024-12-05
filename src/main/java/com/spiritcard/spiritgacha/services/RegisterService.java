@@ -1,10 +1,12 @@
 package com.spiritcard.spiritgacha.services;
 
 import com.spiritcard.spiritgacha.context.AccountContext;
+import com.spiritcard.spiritgacha.managers.AccountRegistrationManager;
 import com.spiritcard.spiritgacha.models.Account;
 import com.spiritcard.spiritgacha.repository.AccountRepository;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -25,9 +27,9 @@ public class RegisterService {
     @Autowired
     private AccountRepository accountRepository;
 
-    private final ConcurrentLinkedQueue<Map.Entry<String, String>> registrationQueue = new ConcurrentLinkedQueue<>();
-    private final Map<String, Integer> registrationAttempts = new ConcurrentHashMap<>(); // Email -> Attempt count
-    private static final int MAX_ATTEMPTS = 5;
+    @Autowired
+    @Lazy
+    private AccountRegistrationManager accountRegistrationManager;
 
     public Account register(String email, String password) {
         String url = "https://napi.teamspirit.gg/graphql";
@@ -81,42 +83,5 @@ public class RegisterService {
             System.err.println("Ошибка при обработке JSON: " + e.getMessage());
             throw new RuntimeException("Error during registration process", e);
         }
-    }
-
-    public void addToQueue(String email, String password) {
-        registrationQueue.add(Map.entry(email, password));
-        System.out.println("Account added to registration queue: " + email);
-    }
-
-    @Scheduled(initialDelay = 600000, fixedRate = 600000)
-    public void processRegistrationQueue() {
-        while (!registrationQueue.isEmpty()) {
-            Map.Entry<String, String> account = registrationQueue.poll();
-            if (account != null) {
-                String email = account.getKey();
-                String password = account.getValue();
-                int attempts = registrationAttempts.getOrDefault(email, 0);
-
-                if (attempts >= MAX_ATTEMPTS) {
-                    System.err.println("Exceeded max registration attempts for: " + email);
-                    continue;
-                }
-
-                try {
-                    register(email, password);
-                    registrationAttempts.remove(email);
-                    System.out.println("Successfully registered: " + email);
-                } catch (Exception e) {
-                    registrationAttempts.put(email, attempts + 1);
-                    System.err.println("Failed to register: " + email + ". Attempts: " + (attempts + 1));
-                    scheduleRetry(email, password);
-                }
-            }
-        }
-    }
-
-    private void scheduleRetry(String email, String password) {
-        registrationQueue.add(Map.entry(email, password));
-        System.out.println("Retry scheduled for: " + email);
     }
 }

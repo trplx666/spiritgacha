@@ -2,18 +2,17 @@ package com.spiritcard.spiritgacha.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.spiritcard.spiritgacha.managers.AccountRegistrationManager;
+import com.spiritcard.spiritgacha.models.Account;
 import com.spiritcard.spiritgacha.services.RegisterService;
+import com.spiritcard.spiritgacha.validators.AccountValidator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
 
 @Component
 public class GenerateAccountCredentials {
@@ -21,8 +20,13 @@ public class GenerateAccountCredentials {
     @Autowired
     private RegisterService registerService;
 
+    @Autowired
+    private AccountValidator accountValidator;
 
-    public Map<String, String> generateAccountCredentials() {
+    @Autowired
+    private AccountRegistrationManager accountRegistrationManager;
+
+    public Account generateAccountCredentials() {
         String url = "https://randomuser.me/api/";
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
@@ -44,11 +48,8 @@ public class GenerateAccountCredentials {
                 JsonNode firstResultNode = resultsNode.get(0);
                 JsonNode loginNode = firstResultNode.path("login");
                 String username = loginNode.path("username").asText();
-                String password = passwordValidator(loginNode.path("password").asText());
-                String email = username + "@gmail.com";
-                Map<String, String> account = new HashMap<>();
-                account.put(email, password);
-                return account;
+                String password = loginNode.path("password").asText();
+                return accountValidator.CredentialsValidator(username, password);
             } else {
                 System.out.println("No results found in the JSON.");
                 return null;
@@ -61,27 +62,11 @@ public class GenerateAccountCredentials {
     }
 
     public void generateAndQueueAccounts() {
-        Map<String, String> account = generateAccountCredentials();
+        Account account = generateAccountCredentials();
         if (account != null) {
-            account.forEach((email, password) -> {
-                registerService.addToQueue(email, password);
-            });
+            accountRegistrationManager.addToQueue(account.getEmail(), account.getPassword());
             System.out.println("Successfully added account " + account + " to queue");
         }
     }
 
-    @Scheduled(initialDelay = 300000,fixedRate = 300000)
-    public void generateAndQueueAccountsScheduled() {
-        generateAndQueueAccounts();
-    }
-
-    private static String passwordValidator(String password) {
-        Random random = new Random();
-        if (password.length() < 8) {
-            while (password.length() != 8) {
-                password = password + random.nextInt(9);
-            }
-        }
-        return password;
-    }
 }
