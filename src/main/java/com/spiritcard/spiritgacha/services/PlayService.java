@@ -85,8 +85,11 @@ public class PlayService {
                 if (tickets >= 0) {
                     Account account = AccountContext.getAccount();
                     if (account != null) {
+                        int totalOpenCount = account.getOpenCount();
+                        totalOpenCount += openCount;
+
                         account.setTickets(tickets);
-                        account.setOpenCount(openCount);
+                        account.setOpenCount(totalOpenCount);
                         accountRepository.save(account);
                         if (tickets > 0){
                             System.out.println("ВЫПАЛА ЗОЛОТАЯ КАРТОЧКА!!! на аккаунт: " + account);
